@@ -1,5 +1,4 @@
 // Start the p5js setup function 
-
 function setup () {
   // Remove Canvas
   noCanvas()
@@ -10,7 +9,7 @@ function setup () {
 
   //Geo-locate
   let lat, lon
-
+  let air, weather, city
   if ('geolocation' in navigator){
     //console.log(navigator)
     navigator.geolocation.getCurrentPosition( async function(position) {
@@ -24,8 +23,9 @@ function setup () {
         const json = await response.json()
         console.log(json)
 
-        const city = json.weather.timezone
-        const weather = json.weather.currently
+        city = json.weather.timezone
+        weather = json.weather.currently
+        air = json.air_quality.data.aqi
 
         const template = `<div class="more_info">
         <div class="weatherDis" >
@@ -42,7 +42,7 @@ function setup () {
         <div class="airDis" >
           <div><i class="fas fa-wind"></i></div>
           <div>
-            <div class="aqi">AQI:</div>
+            <div class="aqi">AQI: ${air}</div>
           </div>
           
         </div>
@@ -61,6 +61,44 @@ function setup () {
   } else {
     console.log('geolocation is not available')
   }
- 
+  
+
+  document.querySelector('button').addEventListener( 'click', async e => {
+    e.preventDefault()
+    // Get mood from user input
+    const mood = document.querySelector('input').value
+    video.loadPixels()
+    const image64 = video.canvas.toDataURL()
+    // Save other objects
+    const location = {}
+    const weather_status= {}
+    const mood_info = {}
+    // Mood data
+    mood_info.mood = mood
+    mood_info.face = image64
+    // Location Data
+    location.latitude = lat
+    location.longitude = lon
+    location.city = city
+    // Weather Data
+    weather_status.summary = weather.summary
+    weather_status.temperature = weather.temperature
+
+    const data = { location, mood_info, weather_status, air}
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    }
+    // Send data to API endpoint
+    const response = await fetch('/api', options)
+    const json = await response.json()
+
+    console.log(json)
+
+  })
 
 }
